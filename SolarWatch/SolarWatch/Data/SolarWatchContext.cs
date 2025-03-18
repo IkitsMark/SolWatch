@@ -1,6 +1,5 @@
-﻿// 
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SolarWatch.Model;
 
 namespace SolarWatch.Data;
@@ -8,15 +7,27 @@ namespace SolarWatch.Data;
 public class SolarWatchContext : DbContext
 {
     public DbSet<City> Cities { get; set; }
-    
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public DbSet<SolarData> SolarDatas { get; set; }
+
+    //constructor for Dependency Injenction!
+    public SolarWatchContext(DbContextOptions<SolarWatchContext> options) : base(options)
     {
-        optionsBuilder.UseSqlServer(
-            "Server=localhost,1433;Database=WeatherApi;User Id=sa;Password=yourStrong(!)Password;Encrypt=False;");
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        /*builder.Entity<SunriseSunset>().HasIndex(s => s.name);*/
+        base.OnModelCreating(builder);
+
+        builder.Entity<City>()
+            .HasIndex(u => u.Name)
+            .IsUnique(); // Ensures City names are unique, but there could be cities with the same name.
+
+        builder.Entity<City>()
+            .Property(c => c.Id)
+            .ValueGeneratedOnAdd();
+
+        builder.Entity<SolarData>()
+            .Property(sd => sd.Id)
+            .ValueGeneratedOnAdd();
     }
 }
