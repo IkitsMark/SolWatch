@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SolarWatch")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60e597d2993ba3894e66e2edceaafcb9d55073bf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eda9d9289aedbf03a79dac7f587232d3e1e8da8c")]
 [assembly: System.Reflection.AssemblyProductAttribute("SolarWatch")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SolarWatch")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

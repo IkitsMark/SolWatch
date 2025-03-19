@@ -1,21 +1,22 @@
-﻿# Dockerfile
-# Build sdk image (1. build)
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
-WORKDIR /app
+﻿FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
+WORKDIR /src
 
-# Copy csproj and restore as distinct layers
 COPY *.csproj ./
 RUN dotnet restore
 
-# Copy everything else and build
 COPY . ./
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release -o out /app/publish /p:UseAppHost=false
 
-# Build runtime image (2. build)
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
-COPY --from=build-env /app/out .
 
-ENTRYPOINT ["dotnet", "SolarWatch.dll"]
+RUN useradd -m myuser
+USER myuser
+
+COPY --from=build-env /app/publish .
+
+EXPOSE 8080
 
 ENV ASPNETCORE_URLS=http://+:8080
+
+ENTRYPOINT ["dotnet", "SolarWatch.dll"]

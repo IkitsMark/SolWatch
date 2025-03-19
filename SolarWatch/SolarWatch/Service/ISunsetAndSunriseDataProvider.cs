@@ -1,8 +1,8 @@
-﻿// 
+﻿using SolarWatch.Model;
 
 namespace SolarWatch.Service;
 
 public interface ISunsetAndSunriseDataProvider
 {
-    Task<string> GetCurrent(double lat, double lon);
+    public Task<string> GetSunriseAndSunset(Coordinate coordinate, string timeZone, DateTime? date);
 }

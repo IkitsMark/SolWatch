@@ -6,86 +6,71 @@ using SolarWatch.Data;
 using SolarWatch.Model;
 using SolarWatch.Service;
 using SolarWatch.Service.Repositories;
+using System.ComponentModel.DataAnnotations;
 
 namespace SolarWatch.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("/api/[controller]")]
 public class SolarWatchController : ControllerBase
 {
-    //Should be refactored to use either the DB or the Repo, 
-    private static readonly string[] Summaries = new[]
-    {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
     
     private readonly ILogger<SolarWatchController> _logger;
-
-    private readonly IJsonProcessor _jsonProcessor;
-    private readonly ISunsetAndSunriseDataProvider _sunsetProvider;
-    private readonly ICityRepository _cityRepository;
+    private readonly ISolarWatchRepository _solarWatchRepository;
     
-    public SolarWatchController(ILogger<SolarWatchController> logger, IJsonProcessor processor, ISunsetAndSunriseDataProvider provider, ICityRepository cityRepository)
+    public SolarWatchController(ISolarWatchRepository solarWatchRepository, ILogger<SolarWatchController> logger)
     {
         _logger = logger;
-        _jsonProcessor = processor;
-        _sunsetProvider = provider;
-        _cityRepository = cityRepository;
+        _solarWatchRepository = solarWatchRepository;
     }
 
-    /*[HttpGet(Name = "GetSunriseAndSunset"), Authorize(Roles="admin")]
-    public async Task<ActionResult<SolarWatch>> Get(string cityName)
+    [HttpGet("GetAllSolarWatchData"), Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IReadOnlyList<SolarData>>> GetAllSolarWatchData()
     {
-        await using var dbContext = new SolarWatchContext();
-
-        var city = dbContext.Cities.FirstOrDefault(c => c.Name == cityName);
-        
-        var apiKey = "f2f328e4e40ac894197f8af45ebc474a";
-        var url = $"http://api.openweathermap.org/geo/1.0/direct?q={cityName}&appid={apiKey}";
-
-        using var client = new HttpClient();
-
-        _logger.LogInformation($"Calling API with {url}", url);
-
-        var weatherData = await client.GetStringAsync(url);
-
-        string[] lonAndLan = _jsonProcessor.ProcessLongitudeAndLatitude(weatherData);
-
-        var newCity = new City();
-        
-        var lat = lonAndLan[0];
-        var lon = lonAndLan[1];
-        
         try
         {
-            var solarData = await _sunsetProvider.GetCurrent(lat, lon);
-            return Ok(_jsonProcessor.Process(solarData));
+            var solarData = await _solarWatchRepository.GetAllSolarWatchAsync();
+            if (solarData == null || !solarData.Any())
+            { 
+                return NotFound("No solar data found!");
+            }
+            return Ok(solarData);
         }
-        catch(Exception e)
+        catch (Exception ex)
         {
-            _logger.LogError(e,"It's over...");
-            return NotFound("Error getting data");
+            _logger.LogError(ex, "Error getting all solar data");
+            return NotFound("Error getting all solar data");
         }
-    }*/
-    
-    [HttpGet("GetCurrent"), Authorize(Roles="User,Admin")]
-    public async Task<ActionResult<SolarWatch>> GetCurrent(string cityName)
+    }
+
+    [HttpPut("UpdateSolarData"), Authorize(Roles = "Admin")]
+    public async Task<ActionResult<SolarData>> UpdateSolarData([FromBody, Required] SolarData newData)
     {
-        var city = _cityRepository.GetByName(cityName);
-        if (city == null)
-        {
-            return NotFound($"City {cityName} not found. :(");
-        }
-        
         try
         {
-            var weatherData = await _sunsetProvider.GetCurrent(city.Latitude, city.Longitude);
-            return Ok(_jsonProcessor.ProcessLongitudeAndLatitude(weatherData));
+            await _solarWatchRepository.UpdateAsync(newData);
+
+            return Ok(newData);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error getting weather data");
-            return NotFound("Error getting weather data");
+            _logger.LogError(e, "Error updating Solar Data");
+            return NotFound("Error updating Solar Data");
+        }
+    }
+
+    [HttpDelete("DeleteSolarData"), Authorize(Roles = "Admin")]
+    public async Task<ActionResult<int>> DeleteSolarData(int id)
+    {
+        try
+        {
+            await _solarWatchRepository.DeleteAsync(id);
+            return Ok(id);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error deleting Solar Data");
+            return NotFound("Error deleting Solar Data");
         }
     }
 }

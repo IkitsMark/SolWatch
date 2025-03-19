@@ -1,6 +1,4 @@
-﻿// 
-
-namespace SolarWatch.Service.Authentication;
+﻿namespace SolarWatch.Service.Authentication;
 
 public record AuthResult(
     bool Success,
@@ -8,6 +6,5 @@ public record AuthResult(
     string UserName,
     string Token)
 {
-    //Error code - error message
-    public readonly Dictionary<string, string> ErrorMessages = new();
+    public Dictionary<string, string> ErrorMessages { get; init; } = new();
 }

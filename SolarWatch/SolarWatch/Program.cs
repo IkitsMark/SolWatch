@@ -1,4 +1,4 @@
-using System
+using System;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -9,58 +9,65 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SolarWatch.Service.Authentication;
 using SolarWatch.Data;
 using SolarWatch.Service;
-using SolarWatch.Service.Authentication;
 using SolarWatch.Service.Repositories;
 using IConfiguration = Microsoft.Extensions.Configuration.IConfiguration;
-
+using SolarWatch.Services.Authentication;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 
 public class Program
 {
     //the main method now adheres to the S of the SOLID principles.
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-
         builder.Configuration.AddEnvironmentVariables();
 
-        AddServices(builder);
+        ConfigureServices(builder);
         ConfigureSwagger(builder);
-        AddDbContexts(builder);
-        AddAuthentication(builder);
-        AddIdentity(builder);
+        ConfigureDatabase(builder);
+        ConfigureAuthentication(builder);
+        ConfigureIdentity(builder);
+        ConfigureCors(builder);
 
         var app = builder.Build();
+
+        await ApplyMigrationsAndSeedDataAsync(app);
 
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
-            app.UseDeveloperExceptionPage();
         }
 
         app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseCors();
         app.MapControllers();
 
-        InitializeDb(app);
-        SeedRolesAndAdminAsync(app).GetAwaiter().GetResult();
-
-        app.Run();
+        await app.RunAsync();
     }
 
     //creates a scoped instance of the service, in the framework of the Interfaces.
-    private static void AddServices(WebApplicationBuilder builder)
+    private static void ConfigureServices(WebApplicationBuilder builder)
     {
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddHttpClient();
+        builder.Services.AddSingleton<JwtSecurityTokenHandler>();
+
         builder.Services.AddScoped<IJsonProcessor, JsonProcessor>();
-        builder.Services.AddScoped<ISunsetAndSunriseDataProvider, SunriseAndSunSetApi>();
+        builder.Services.AddScoped<IOpenWeather, OpenWeather>();
+        builder.Services.AddScoped<ISunsetAndSunriseDataProvider, SunriseAndSunsetApi>();
         builder.Services.AddScoped<ICityRepository, CityRepository>();
-        builder.Services.AddScoped<ITokenService, TokenService>();
+        builder.Services.AddScoped<ISolarWatchRepository, SolarWatchRepository>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<ITokenService, TokenService>();
+        builder.Services.AddScoped<AuthenticationSeeder>();
     }
 
     //Swagger configuration
@@ -68,7 +75,7 @@ public class Program
     {
         builder.Services.AddSwaggerGen(option =>
         {
-            option.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
+            option.SwaggerDoc("v1", new OpenApiInfo { Title = "SolWatch API", Version = "v1" });
             option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
@@ -89,24 +96,26 @@ public class Program
                             Id="Bearer"
                         }
                     },
-                    new string[]{}
+                    new string[] {}
                 }
             });
         });
     }
 
-    //gets connection string from appsettings.json and creates the DB based on teh Contexts
-    private static void AddDbContexts(WebApplicationBuilder builder)
+    //gets connection string from appsettings.json and creates the DB based on the Contexts
+    private static void ConfigureDatabase(WebApplicationBuilder builder)
     {
-        var connectionString = builder.Configuration.GetConnectionString("Default");
+        var connectionString = builder.Configuration.GetConnectionString("SolarApi");
 
         builder.Services.AddDbContext<SolarWatchContext>(options => options.UseSqlServer(connectionString));
         builder.Services.AddDbContext<UsersContext>(options => options.UseSqlServer(connectionString));
+
+
     }
 
 
     //this method configures the JWT token, appsettings has the specifics
-    private static void AddAuthentication(WebApplicationBuilder builder)
+    private static void ConfigureAuthentication(WebApplicationBuilder builder)
     {
         var jwtSettings = builder.Configuration.GetSection("Jwt");
         var issuerSigningKey = builder.Configuration["Jwt:IssuerSigningKey"];
@@ -133,7 +142,7 @@ public class Program
     }
 
     //initializes EF Identity specifics
-    private static void AddIdentity(WebApplicationBuilder builder)
+    private static void ConfigureIdentity(WebApplicationBuilder builder)
     {
         builder.Services
             .AddIdentityCore<IdentityUser>(options =>
@@ -150,58 +159,48 @@ public class Program
             .AddEntityFrameworkStores<UsersContext>();
     }
 
-    //handles starting database migrations and runs PrintCities
-    private static void InitializeDb(WebApplication app)
+    private static void ConfigureCors(WebApplicationBuilder builder)
     {
-        using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SolarWatchContext>();
-        db.Database.Migrate();
-        PrintCities(db);
-    }
-
-    //method that prints to the console each city in the database
-    private static void PrintCities(SolarWatchContext db)
-    {
-        foreach (var city in db.Cities)
+        var frontendURL = builder.Configuration["URL:FrontendURL"];
+        if (string.IsNullOrEmpty(frontendURL))
         {
-            Console.WriteLine($"{city.Id}, {city.Name}, {city.Latitude}, {city.Longitude}");
+            throw new ArgumentNullException("URL:FrontendURL", "The URL:FrontendURL configuration value is missing or empty.");
         }
-    }
-
-    //this seeds the roles and the admin if they are not found in the database. RoleManager is a scoped service, therefore we need a scope instance to access it
-    private static async Task SeedRolesAndAdminAsync(WebApplication app)
-    {
-        using var scope = app.Services.CreateScope();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-
-        await CreateRoleIfNotExists(roleManager, "Admin");
-        await CreateRoleIfNotExists(roleManager, "User");
-        await CreateAdminIfNotExists(userManager);
-    }
-
-    //this method creates roles if they don't exist
-    private static async Task CreateRoleIfNotExists(RoleManager<IdentityRole> roleManager, string roleName)
-    {
-        if (!await roleManager.RoleExistsAsync(roleName))
+        builder.Services.AddCors(options =>
         {
-            await roleManager.CreateAsync(new IdentityRole(roleName));
-        }
-    }
-
-    //This method creates an admin if it is unable to find it in the database
-    private static async Task CreateAdminIfNotExists(UserManager<IdentityUser> userManager)
-    {
-        var adminEmail = "admin@admin.com";
-        var adminInDb = await userManager.FindByEmailAsync(adminEmail);
-        if (adminInDb == null)
-        {
-            var admin = new IdentityUser { UserName = "admin", Email = adminEmail };
-            var result = await userManager.CreateAsync(admin, "admin123");
-            if (result.Succeeded)
+            options.AddDefaultPolicy(policy =>
             {
-                await userManager.AddToRoleAsync(admin, "Admin");
+                policy.WithOrigins(frontendURL)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials();
+            });
+        });
+    }
+
+    private static async Task ApplyMigrationsAndSeedDataAsync(WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        try
+        {
+            var dbContext = new DbContext[]
+            {
+                scope.ServiceProvider.GetRequiredService<SolarWatchContext>(),
+                scope.ServiceProvider.GetRequiredService<UsersContext>()
+            };
+            foreach(var context in dbContext)
+            {
+                await context.Database.MigrateAsync();
             }
+
+            var authenticationSeeder = scope.ServiceProvider.GetRequiredService<AuthenticationSeeder>();
+            await authenticationSeeder.AddRolesAsync();
+            await authenticationSeeder.AddAdminAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database migration or seeding failed: {ex.Message}");
+            throw;
         }
     }
 }

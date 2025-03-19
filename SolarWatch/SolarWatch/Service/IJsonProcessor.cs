@@ -1,10 +1,12 @@
-﻿// 
-
-using SolarWatch.Model;
+﻿using SolarWatch.Model;
+using System.Text.Json;
 
 namespace SolarWatch.Service;
 
 public interface IJsonProcessor
 {
-    string[] ProcessLongitudeAndLatitude(string data);
+    public DateTime GetSunrise(string data);
+    public DateTime GetSunset(string data);
+    public Coordinate ConvertDataToCoordinate(string data);
+    public City ConvertDataToCity(string data);
 }

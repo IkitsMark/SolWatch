@@ -454,3 +454,14 @@ E:\Codecool\Advanced.NET\4 SW\solarwatch-7-csharp-csharp-IkitsMark\SolarIntegrat
 E:\Codecool\Advanced.NET\4 SW\solarwatch-7-csharp-csharp-IkitsMark\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.pdb
 E:\Codecool\Advanced.NET\4 SW\solarwatch-7-csharp-csharp-IkitsMark\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.genruntimeconfig.cache
 E:\Codecool\Advanced.NET\4 SW\solarwatch-7-csharp-csharp-IkitsMark\SolarIntegrationTest\obj\Debug\net7.0\ref\SolarIntegrationTest.dll
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\bin\Debug\net7.0\CoverletSourceRootsMapping
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.csproj.AssemblyReference.cache
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\MvcTestingAppManifest.json
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.GeneratedMSBuildEditorConfig.editorconfig
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.AssemblyInfoInputs.cache
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.AssemblyInfo.cs
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.csproj.CoreCompileInputs.cache
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.sourcelink.json
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.dll
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\refint\SolarIntegrationTest.dll
+E:\Codecool\Advanced.NET\SolWatch\SolWatch\SolarIntegrationTest\obj\Debug\net7.0\SolarIntegrationTest.pdb

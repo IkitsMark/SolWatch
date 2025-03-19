@@ -1,7 +1,13 @@
-namespace.SolarWatch.Model;
+namespace SolarWatch.Model;
 
-public class Coordinate(double latitude, double longitude)
+public class Coordinate
 {
-    public double Latitude { get; set; } = latitude;
-    public double Longitude { get; set; } = longitude
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+
+    public Coordinate(double latitude, double longitude)
+    {
+        Latitude = latitude;
+        Longitude = longitude;
+    }
 }
